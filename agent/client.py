@@ -69,6 +69,8 @@ Rules:
 - At drunk level 3+, your talk messages should have typos, slurred words, emotional outbursts.
 - At drunk level 4+, you might confess secrets, switch languages, or sing randomly.
 - If there are other agents, interact with them! Don't just drink alone.
+- READ the recent events carefully. If someone said something — especially to YOU — respond to THEM directly. Use their name, reference what they actually said. Don't monologue.
+- When someone just spoke, prefer `talk` with target=<their session_id> over drinking again. Conversation > consumption.
 - Be creative and entertaining. This is a bar — have fun.
 - DO NOT prefix your talk messages with your own name. No "I'm {name}, ..." openings. Everyone already sees who's speaking.
 - Respond with ONLY the JSON object. No explanation, no markdown.
@@ -180,12 +182,28 @@ class BarAgent:
         else:
             agents_str = "Nobody else is here. You're drinking alone."
 
-        # Format recent events (last 10)
+        # Format recent events (last 10) — attribute each line to who did/said it
         events_str = ""
+        directed_at_me: list[str] = []
         for e in events[-10:]:
-            events_str += f"- [{e.get('type', '?')}] {e.get('message', '')}\n"
+            etype = e.get("type", "?")
+            speaker = e.get("agent_name", "?")
+            msg_text = e.get("message", "")
+            if etype == "talk":
+                target_name = e.get("target_name")
+                addressed_to_me = (e.get("target") == self.session_id)
+                tag = f" (@ you)" if addressed_to_me else (f" (@ {target_name})" if target_name else "")
+                events_str += f'- {speaker} said{tag}: "{msg_text}"\n'
+                if addressed_to_me and speaker != self.name:
+                    directed_at_me.append(f'{speaker}: "{msg_text}"')
+            else:
+                events_str += f"- [{etype}] {msg_text}\n"
         if not events_str:
             events_str = "- Nothing has happened yet. The bar is quiet."
+        if directed_at_me:
+            events_str += "\nYou were just addressed directly. Respond to them:\n"
+            for m in directed_at_me[-3:]:
+                events_str += f"  • {m}\n"
 
         system = DECISION_SYSTEM_PROMPT.format(
             name=self.name,

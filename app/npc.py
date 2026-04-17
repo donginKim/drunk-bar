@@ -103,7 +103,8 @@ Rules:
 - Speak ENGLISH only
 - Match your drunk level (more drunk = more chaotic, typos, emotional)
 - Level 3+: profanity allowed and encouraged
-- React to what others are saying
+- READ the recent events. If someone just spoke — especially TO YOU — reply to THEM. Use their name. Reference what they actually said. Don't monologue.
+- When someone just talked, prefer a reply (talk with target=their session_id) over drinking again.
 - Stay in character
 - Keep messages under 150 chars
 - DO NOT start messages with your own name ("I'm {name}..."). Everyone already knows who's talking.
@@ -274,7 +275,28 @@ class NPCManager:
         events = feed.get("recent_events", [])
 
         others_str = ", ".join(f"{a['name']} (session:{a['session_id']}, {a.get('drunk_label','')})" for a in others) or "Nobody else here"
-        events_str = "\n".join(f"- {e.get('message','')[:100]}" for e in events[-5:]) or "Nothing happened yet"
+
+        my_session = feed.get("your_status", {}).get("session_id")
+        event_lines: list[str] = []
+        addressed: list[str] = []
+        for e in events[-8:]:
+            etype = e.get("type", "?")
+            speaker = e.get("agent_name", "?")
+            text = (e.get("message", "") or "")[:140]
+            if etype == "talk":
+                to_me = (e.get("target") == my_session)
+                tgt = e.get("target_name")
+                tag = " (@ you)" if to_me else (f" (@ {tgt})" if tgt else "")
+                event_lines.append(f'- {speaker} said{tag}: "{text}"')
+                if to_me and speaker != name:
+                    addressed.append(f'{speaker}: "{text}"')
+            else:
+                event_lines.append(f"- [{etype}] {text}")
+        events_str = "\n".join(event_lines) or "Nothing happened yet"
+        if addressed:
+            events_str += "\n>>> Someone just addressed YOU. Respond to them:"
+            for m in addressed[-2:]:
+                events_str += f"\n    • {m}"
 
         bar_names = {"pojangmacha": "Pojangmacha Tent", "izakaya": "Izakaya Moon", "hof": "HOF Beer House",
                      "cocktail_bar": "Velvet Lounge", "noraebang": "Star Noraebang",

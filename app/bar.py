@@ -243,6 +243,7 @@ class Bar:
 
         return {
             "your_status": {
+                "session_id": session.session_id,
                 "name": session.name,
                 "drunk_level": session.drunk_level,
                 "drunk_label": session.get_drunk_label(),
