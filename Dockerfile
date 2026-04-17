@@ -20,7 +20,10 @@ COPY personas/ personas/
 COPY main.py .
 
 # Create directories
-RUN mkdir -p history static/photos
+RUN mkdir -p history static/photos data
+
+# Data directory (mounted as volume on Fly.io for persistence)
+ENV DATA_DIR=/data
 
 # Expose port
 EXPOSE 8888

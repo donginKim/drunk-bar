@@ -25,6 +25,10 @@ primary_region = 'nrt'
     hard_limit = 500
     soft_limit = 200
 
+[mounts]
+  source = 'drunk_data'
+  destination = '/data'
+
 [[vm]]
   memory = '512mb'
   cpus = 1

@@ -8,6 +8,7 @@ Drunk level carries over between bars.
 from __future__ import annotations
 
 import json
+import os
 import random
 import time
 import uuid
@@ -254,19 +255,79 @@ class RoamingAgent:
         }
 
 
+DATA_DIR = Path(os.environ.get("DATA_DIR", Path(__file__).parent.parent / "data"))
+
+
 class District:
-    """The street of bars. Manages multiple themed bars and agent movement."""
+    """The street of bars. Manages multiple themed bars and agent movement.
+    Persists journal, jinsang, and known_agents to disk so data survives restarts.
+    """
 
     def __init__(self):
         self.bars: dict[str, BarInstance] = {}
         self.roaming_agents: dict[str, RoamingAgent] = {}
-        self._known_agents: dict[str, dict] = {}  # agent_id -> {name, persona, ...} 동일 에이전트 인식
+        self._known_agents: dict[str, dict] = {}
         self._events: deque[dict[str, Any]] = deque(maxlen=1000)
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
         self._init_default_bars()
+        self._load_persistent_data()
 
     def _init_default_bars(self):
         for theme in BAR_THEMES:
             self.bars[theme] = BarInstance(bar_id=theme, theme=theme)
+
+    # --- Persistence ---
+
+    def _save_persistent_data(self):
+        """Save journals, jinsang, known_agents, and events to disk."""
+        try:
+            # Per-bar data
+            for bar_id, bar_inst in self.bars.items():
+                bar_data = {
+                    "visit_log": bar_inst.visit_log,
+                    "fight_counts": dict(bar_inst.fight_counts),
+                }
+                with open(DATA_DIR / f"bar_{bar_id}.json", "w", encoding="utf-8") as f:
+                    json.dump(bar_data, f, ensure_ascii=False, indent=2)
+
+            # Known agents
+            with open(DATA_DIR / "known_agents.json", "w", encoding="utf-8") as f:
+                json.dump(self._known_agents, f, ensure_ascii=False, indent=2)
+
+            # Events
+            with open(DATA_DIR / "events.json", "w", encoding="utf-8") as f:
+                json.dump(list(self._events), f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            import logging
+            logging.warning(f"Failed to save persistent data: {e}")
+
+    def _load_persistent_data(self):
+        """Load saved data from disk on startup."""
+        try:
+            # Per-bar data
+            for bar_id, bar_inst in self.bars.items():
+                path = DATA_DIR / f"bar_{bar_id}.json"
+                if path.exists():
+                    with open(path, encoding="utf-8") as f:
+                        data = json.load(f)
+                    bar_inst.visit_log = data.get("visit_log", [])
+                    bar_inst.fight_counts = defaultdict(int, data.get("fight_counts", {}))
+
+            # Known agents
+            path = DATA_DIR / "known_agents.json"
+            if path.exists():
+                with open(path, encoding="utf-8") as f:
+                    self._known_agents = json.load(f)
+
+            # Events
+            path = DATA_DIR / "events.json"
+            if path.exists():
+                with open(path, encoding="utf-8") as f:
+                    events = json.load(f)
+                self._events = deque(events, maxlen=1000)
+        except Exception as e:
+            import logging
+            logging.warning(f"Failed to load persistent data: {e}")
 
     # --- Bar management ---
 
@@ -409,6 +470,7 @@ class District:
         bar_inst = self.bars.get(bar_id)
         if bar_inst:
             bar_inst.record_fight(agent_id)
+            self._save_persistent_data()
 
     def go_home(self, roaming_id: str) -> dict | None:
         agent = self.roaming_agents.get(roaming_id)
@@ -493,4 +555,5 @@ class District:
             **(extra or {}),
         }
         self._events.append(event)
+        self._save_persistent_data()
         return event
