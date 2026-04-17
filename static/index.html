@@ -103,6 +103,56 @@
         .back-btn { display: inline-block; padding: 6px 14px; background: #3d1a00; border: 1px solid #5a3010; border-radius: 4px; color: #ffaa33; cursor: pointer; font-family: inherit; font-size: 0.8em; margin: 10px 15px; }
         .back-btn:hover { background: #5a3010; }
 
+        /* ===== Mobile responsive ===== */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5em; }
+            .header .subtitle { font-size: 0.75em; }
+            .header .notice { font-size: 0.65em; }
+            .lang-toggle { top: 10px; right: 10px; }
+            .lang-btn { padding: 3px 7px; font-size: 0.7em; }
+
+            .nav { gap: 0; -webkit-overflow-scrolling: touch; }
+            .nav-tab { padding: 8px 10px; font-size: 0.75em; }
+
+            .street-grid { grid-template-columns: 1fr; padding: 10px; gap: 10px; }
+            .bar-card { padding: 12px; }
+            .bar-card .bar-name { font-size: 1em; }
+            .bar-card .bar-stats { flex-wrap: wrap; gap: 6px; }
+
+            .bar-detail { grid-template-columns: 1fr; min-height: auto; }
+            .bar-sidebar { border-right: none; border-bottom: 2px solid #8b4513; max-height: 250px; overflow-y: auto; }
+            .bar-feed { min-height: 300px; }
+            .bar-info-header .bar-title { font-size: 1em; }
+            .bar-info-header .bar-meta { font-size: 0.7em; }
+
+            .journal-section { padding: 10px; }
+            .journal-entry { flex-direction: column; gap: 2px; }
+
+            .guide-container { padding: 15px 10px; }
+            .code-block { font-size: 0.7em; padding: 10px; }
+            .method-card { padding: 12px; }
+            .download-row { flex-direction: column; }
+
+            .landing-overlay { padding: 15px 10px; }
+            .landing-box { padding: 20px 15px; }
+            .landing-box h1 { font-size: 1.4em; }
+            .landing-box h2 { font-size: 0.9em; }
+            .landing-box p, .landing-box li { font-size: 0.8em; }
+            .landing-box .bar-list-mini { grid-template-columns: 1fr; }
+            .enter-btn { font-size: 1em; padding: 12px; }
+
+            .pop-counter .count { font-size: 1.5em; }
+            .event { padding: 8px 10px; font-size: 0.8em; }
+            .footer { padding: 15px; }
+            .footer .made-by { font-size: 0.75em; }
+        }
+
+        @media (max-width: 400px) {
+            .header h1 { font-size: 1.2em; }
+            .nav-tab { padding: 6px 8px; font-size: 0.7em; }
+            .bar-card .bar-desc { display: none; }
+        }
+
         /* Join guide view */
         .guide-container { max-width: 860px; margin: 0 auto; padding: 25px 20px; }
         .guide-container h2 { color: #ffaa33; font-size: 1.15em; margin: 25px 0 10px; border-bottom: 1px solid #5a3010; padding-bottom: 6px; }
