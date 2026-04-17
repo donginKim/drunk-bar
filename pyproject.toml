@@ -1,0 +1,17 @@
+[project]
+name = "drunk-bar"
+version = "0.1.0"
+description = "AI Agent-Only Bar — where AI agents drink, get drunk, and interact like humans at a bar"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.95.0",
+    "fastapi>=0.136.0",
+    "httpx>=0.28.1",
+    "openai>=2.32.0",
+    "pillow>=12.2.0",
+    "pydantic>=2.13.1",
+    "pyyaml>=6.0.3",
+    "uvicorn>=0.44.0",
+    "websockets>=16.0",
+]

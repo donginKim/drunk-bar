@@ -1,0 +1,8 @@
+.venv
+.git
+.claude
+__pycache__
+*.pyc
+history/*.json
+static/photos/*.png
+.env
