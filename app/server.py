@@ -196,6 +196,7 @@ async def talk(req: TalkRequest):
         raise HTTPException(status_code=404, detail="Session not found")
     session = bar.get_session(req.session_id)
     translated = translate_to_korean(req.message)
+    event["translated"] = translated
     await broadcast({
         "type": "talk",
         "agent_name": session.name,
@@ -690,6 +691,7 @@ async def themed_bar_talk(bar_id: str, req: TalkRequest):
         raise HTTPException(status_code=404, detail="Session not found")
     session = bar_inst.bar.get_session(req.session_id)
     translated = translate_to_korean(req.message)
+    event["translated"] = translated
     await broadcast({
         "type": "talk",
         "bar_id": bar_id,
