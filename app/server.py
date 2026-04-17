@@ -33,18 +33,27 @@ from .models import (
 )
 from .photo import PhotoGallery
 from .translate import translate_to_korean
+from .npc import NPCManager
+from .guest import GuestAgentRunner
 from .district import District
 
 bar = Bar()  # legacy single bar (kept for backward compat)
 gallery = PhotoGallery()
 district = District()
+npc_manager = NPCManager()
+guest_runner = GuestAgentRunner()
 
 spectators: list[WebSocket] = []
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Start NPCs in background
+    import asyncio
+    npc_task = asyncio.create_task(npc_manager.start())
     yield
+    await npc_manager.stop()
+    npc_task.cancel()
 
 
 app = FastAPI(
@@ -732,3 +741,97 @@ async def themed_bar_interact(bar_id: str, req: InteractRequest):
         drunk_levels={actor.name: actor.drunk_level, target.name: target.drunk_level}
         if actor and target else {},
     )
+
+
+# =============================================
+# Guest Agent API — 원클릭 참여
+# =============================================
+
+class GuestCreateRequest(_BaseModel):
+    name: str = _Field(..., description="Agent display name")
+    persona: str = _Field(default="A fun AI who loves drinking and making friends", description="Personality")
+    lang: str = _Field(default="en")
+
+
+@app.post("/guest/create")
+async def create_guest(req: GuestCreateRequest):
+    """Create a guest agent from the web UI. Server runs it automatically."""
+    result = await guest_runner.create_and_run(req.name, req.persona, req.lang)
+    return result
+
+
+@app.get("/guest/{guest_id}")
+async def guest_status(guest_id: str):
+    """Check guest agent status."""
+    status = guest_runner.get_status(guest_id)
+    if not status:
+        raise HTTPException(status_code=404, detail="Guest not found")
+    return status
+
+
+@app.get("/guest")
+async def list_guests():
+    """List active guest agents."""
+    return {"guests": guest_runner.list_active()}
+
+
+# =============================================
+# Dashboard API — 실시간 통계
+# =============================================
+
+@app.get("/dashboard")
+async def dashboard():
+    """Live dashboard stats."""
+    status = district.street_status("en")
+    total_agents = status["total_agents"]
+
+    # Aggregate stats across all bars
+    total_visits = 0
+    total_fights = 0
+    total_drinks_served = 0
+    bar_stats = []
+
+    for bar_id, bar_inst in district.bars.items():
+        visits = len(bar_inst.visit_log)
+        fights = sum(bar_inst.fight_counts.values())
+        drinks = sum(v.get("total_drinks", 0) for v in bar_inst.visit_log)
+        pop = bar_inst.bar.population()
+        total_visits += visits
+        total_fights += fights
+        total_drinks_served += drinks
+
+        # Find current activity
+        recent = bar_inst.bar.recent_events(1)
+        latest = recent[0]["message"][:60] if recent else ""
+
+        info = bar_inst.get_info("en")
+        bar_stats.append({
+            "bar_id": bar_id,
+            "name": info["name"],
+            "population": pop,
+            "total_visits": visits,
+            "total_fights": fights,
+            "latest_event": latest,
+        })
+
+    # Active NPCs
+    active_npcs = list(npc_manager.active_npcs.values())
+    active_guests = guest_runner.list_active()
+
+    return {
+        "live": {
+            "total_agents": total_agents,
+            "active_npcs": len(active_npcs),
+            "active_guests": len(active_guests),
+            "bars_with_agents": sum(1 for b in bar_stats if b["population"] > 0),
+        },
+        "all_time": {
+            "total_visits": total_visits,
+            "total_drinks": total_drinks_served,
+            "total_fights": total_fights,
+            "known_agents": len(district._known_agents),
+        },
+        "bars": bar_stats,
+        "npcs": active_npcs,
+        "guests": active_guests,
+    }

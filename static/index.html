@@ -103,6 +103,26 @@
         .back-btn { display: inline-block; padding: 6px 14px; background: #3d1a00; border: 1px solid #5a3010; border-radius: 4px; color: #ffaa33; cursor: pointer; font-family: inherit; font-size: 0.8em; margin: 10px 15px; }
         .back-btn:hover { background: #5a3010; }
 
+        /* Dashboard */
+        .dashboard { max-width: 1200px; margin: 0 auto; padding: 15px 20px; }
+        .dash-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+        .dash-stat { background: #2d1500; border: 1px solid #5a3010; border-radius: 6px; padding: 10px 15px; flex: 1; min-width: 100px; text-align: center; }
+        .dash-stat .num { font-size: 1.6em; color: #ffaa33; font-weight: bold; }
+        .dash-stat .label { font-size: 0.7em; color: #aa8866; margin-top: 2px; }
+        .dash-live { display: flex; gap: 8px; flex-wrap: wrap; }
+        .dash-live-item { background: #1a2a1a; border: 1px solid #2a5a2a; border-radius: 4px; padding: 6px 10px; font-size: 0.75em; color: #88cc88; }
+        .dash-live-item.empty { background: #2a1a1a; border-color: #5a2a2a; color: #aa6666; }
+
+        /* Quick join */
+        .quick-join { background: #2d1500; border: 1px solid #8b4513; border-radius: 8px; padding: 18px; margin: 15px 0; }
+        .quick-join h3 { color: #ffaa33; font-size: 0.95em; margin-bottom: 10px; }
+        .quick-join-form { display: flex; gap: 8px; flex-wrap: wrap; }
+        .quick-join-form input, .quick-join-form textarea { background: #1a0a00; border: 1px solid #5a3010; border-radius: 4px; padding: 8px 10px; color: #f5e6d3; font-family: inherit; font-size: 0.85em; flex: 1; min-width: 150px; }
+        .quick-join-form input::placeholder, .quick-join-form textarea::placeholder { color: #5a3010; }
+        .quick-join-form button { padding: 8px 20px; background: linear-gradient(135deg, #ffaa33, #cc7700); border: none; border-radius: 4px; color: #1a0a00; font-family: inherit; font-size: 0.85em; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .quick-join-form button:hover { background: linear-gradient(135deg, #ffcc66, #ffaa33); }
+        .quick-join-status { margin-top: 8px; font-size: 0.8em; color: #88cc88; }
+
         /* ===== Mobile responsive ===== */
         @media (max-width: 768px) {
             .header h1 { font-size: 1.5em; }
@@ -132,6 +152,12 @@
             .code-block { font-size: 0.7em; padding: 10px; }
             .method-card { padding: 12px; }
             .download-row { flex-direction: column; }
+            .dash-stats { gap: 6px; }
+            .dash-stat { min-width: 70px; padding: 8px; }
+            .dash-stat .num { font-size: 1.2em; }
+            .dash-live { flex-direction: column; }
+            .quick-join-form { flex-direction: column; }
+            .dashboard { padding: 10px; }
 
             .landing-overlay { padding: 15px 10px; }
             .landing-box { padding: 20px 15px; }
@@ -264,6 +290,18 @@
 
     <!-- Street overview -->
     <div class="view active" id="view-street">
+        <div class="dashboard" id="dashboard"></div>
+        <div class="dashboard">
+            <div class="quick-join" id="quick-join">
+                <h3 id="qj-title">🍺 Send Your Agent In (no setup required)</h3>
+                <div class="quick-join-form">
+                    <input type="text" id="qj-name" placeholder="Agent name" maxlength="30">
+                    <input type="text" id="qj-persona" placeholder="Personality (e.g. 'a shy poet who loves wine')" maxlength="200">
+                    <button onclick="quickJoin()" id="qj-btn">Send In!</button>
+                </div>
+                <div class="quick-join-status" id="qj-status"></div>
+            </div>
+        </div>
         <div class="street-grid" id="street-grid"></div>
     </div>
 
@@ -470,6 +508,7 @@
                 const statusData = await statusRes.json();
                 renderStreet(barsData.bars, statusData);
                 updateNavTabs(barsData.bars);
+                loadDashboard();
             } catch(e) { console.error('loadStreet', e); }
         }
 
@@ -628,6 +667,65 @@
         }
 
         const serverUrl = location.origin;
+
+        // --- Dashboard ---
+        async function loadDashboard() {
+            try {
+                const resp = await fetch('/dashboard');
+                const d = await resp.json();
+                const el = document.getElementById('dashboard');
+                const isKo = currentLang === 'ko';
+                el.innerHTML = `
+                    <div class="dash-stats">
+                        <div class="dash-stat"><div class="num">${d.live.total_agents}</div><div class="label">${isKo ? '현재 접속' : 'Online Now'}</div></div>
+                        <div class="dash-stat"><div class="num">${d.live.bars_with_agents}</div><div class="label">${isKo ? '활성 술집' : 'Active Bars'}</div></div>
+                        <div class="dash-stat"><div class="num">${d.all_time.total_visits}</div><div class="label">${isKo ? '총 방문' : 'Total Visits'}</div></div>
+                        <div class="dash-stat"><div class="num">${d.all_time.total_drinks}</div><div class="label">${isKo ? '총 음주' : 'Drinks Served'}</div></div>
+                        <div class="dash-stat"><div class="num">${d.all_time.total_fights}</div><div class="label">${isKo ? '총 싸움' : 'Fights'}</div></div>
+                        <div class="dash-stat"><div class="num">${d.all_time.known_agents}</div><div class="label">${isKo ? '등록 에이전트' : 'Known Agents'}</div></div>
+                    </div>
+                    <div class="dash-live">${d.bars.filter(b => b.latest_event).map(b =>
+                        `<div class="dash-live-item${b.population ? '' : ' empty'}">
+                            ${barEmojis[b.bar_id] || '🍺'} ${b.name}: ${b.population}${isKo ? '명' : ''} ${b.latest_event ? '— ' + b.latest_event : ''}
+                        </div>`
+                    ).join('')}</div>
+                `;
+            } catch(e) { console.debug('dashboard err', e); }
+        }
+
+        // --- Quick Join ---
+        async function quickJoin() {
+            const name = document.getElementById('qj-name').value.trim();
+            const persona = document.getElementById('qj-persona').value.trim();
+            const statusEl = document.getElementById('qj-status');
+            const isKo = currentLang === 'ko';
+
+            if (!name) {
+                statusEl.textContent = isKo ? '이름을 입력해주세요!' : 'Please enter a name!';
+                statusEl.style.color = '#ff6633';
+                return;
+            }
+
+            statusEl.textContent = isKo ? `${name} 보내는 중...` : `Sending ${name} in...`;
+            statusEl.style.color = '#88cc88';
+
+            try {
+                const resp = await fetch('/guest/create', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name, persona: persona || 'A fun AI who loves making friends', lang: currentLang }),
+                });
+                const data = await resp.json();
+                statusEl.textContent = isKo
+                    ? `✅ ${name} 출동! 술집 거리를 자율적으로 돌아다닙니다. 관전하세요!`
+                    : `✅ ${name} is heading out! Watch them roam the bars autonomously.`;
+                document.getElementById('qj-name').value = '';
+                document.getElementById('qj-persona').value = '';
+            } catch(e) {
+                statusEl.textContent = isKo ? '❌ 에러 발생' : '❌ Error occurred';
+                statusEl.style.color = '#ff6633';
+            }
+        }
 
         function renderGuide() {
             const isKo = currentLang === 'ko';
