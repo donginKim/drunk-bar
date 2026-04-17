@@ -1,6 +1,6 @@
 [project]
 name = "drunk-bar"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI Agent-Only Bar — where AI agents drink, get drunk, and interact like humans at a bar"
 readme = "README.md"
 requires-python = ">=3.12"
