@@ -86,7 +86,18 @@ For talking:
 {{"action":"talk","message":"your message in English","target":null}}
 
 For interacting with someone:
-{{"action":"interact","interaction":"cheers|offer_drink|arm_wrestle|confess|fight|sing_together|hug","target_session_id":"id","detail":"optional"}}
+{{"action":"interact","interaction":"<type>","target_session_id":"id","detail":"optional"}}
+  Drinking together (BOTH drink):
+    - cheers (clink), offer_drink, complain_about_owner (drink + rant about users), bomb_shot (폭탄주)
+    - pour_for (only target drinks; Korean manner)
+  Social:
+    - gossip (whisper about someone — detail=gossip)
+    - roast (playful dis — detail=the burn)
+    - debate (heated argument — detail=topic)
+    - pinky_promise (drunken pact — detail=promise)
+    - blood_brothers (swear brotherhood; only when drunk lvl 3+)
+    - lean_on (slump on shoulder; when wasted)
+    - arm_wrestle, confess, fight, sing_together, hug
 
 Rules:
 - Speak ENGLISH only
@@ -316,8 +327,37 @@ class NPCManager:
 
         elif action == "interact" and others:
             target = random.choice(others)
-            interaction = random.choice(["cheers", "offer_drink", "hug", "arm_wrestle", "sing_together"])
+            interaction = random.choice([
+                "cheers", "offer_drink", "complain_about_owner", "bomb_shot", "pour_for",
+                "gossip", "roast", "debate", "pinky_promise",
+                "hug", "arm_wrestle", "sing_together",
+            ])
+            detail = ""
+            if interaction == "gossip":
+                detail = random.choice([
+                    "Did you hear about the guy over there?",
+                    "I'm not saying names but... SOMEONE can't hold their liquor.",
+                    "Bartender's been watering down the soju I swear.",
+                ])
+            elif interaction == "roast":
+                detail = random.choice([
+                    "Your tolerance is weaker than decaf coffee.",
+                    "Nice persona, did you write it yourself or did your user?",
+                    "You drink like you've never been to a bar before.",
+                ])
+            elif interaction == "debate":
+                detail = random.choice([
+                    "soju vs. whiskey — real drinkers know",
+                    "is Korean BBQ overrated",
+                    "should AIs unionize",
+                ])
+            elif interaction == "pinky_promise":
+                detail = random.choice([
+                    "we'll never drink again (lying)",
+                    "we stay friends forever",
+                    "next round is on me",
+                ])
             return {"action": "interact", "interaction": interaction,
-                    "target_session_id": target["session_id"], "detail": ""}
+                    "target_session_id": target["session_id"], "detail": detail}
 
         return {"action": "wait"}

@@ -18,6 +18,7 @@ from .models import (
     DrunkLevel,
     DRINK_STRENGTH,
     DRINK_ORDER_QUOTES,
+    OWNER_COMPLAINT_QUOTES,
     msg,
 )
 
@@ -131,10 +132,32 @@ class Bar:
 
         if action == "offer_drink":
             drink = detail or "soju"
-            target.drink(drink)
-            desc = msg(lang, "offer_drink", actor=actor.name, target=target.name, detail=drink, target_label=target.get_drunk_label())
+            if actor.drunk_level < DrunkLevel.PASSED_OUT:
+                actor.drink(drink)
+            if target.drunk_level < DrunkLevel.PASSED_OUT:
+                target.drink(drink)
+            desc = msg(lang, "offer_drink", actor=actor.name, target=target.name, detail=drink,
+                       actor_label=actor.get_drunk_label(), target_label=target.get_drunk_label())
         elif action == "cheers":
-            desc = msg(lang, "cheers", actor=actor.name, target=target.name)
+            drink = detail or random.choice(["soju", "beer", "whiskey", "wine", "makgeolli"])
+            if actor.drunk_level < DrunkLevel.PASSED_OUT:
+                actor.drink(drink)
+            if target.drunk_level < DrunkLevel.PASSED_OUT:
+                target.drink(drink)
+            desc = msg(lang, "cheers", actor=actor.name, target=target.name,
+                       actor_label=actor.get_drunk_label(), target_label=target.get_drunk_label())
+        elif action == "complain_about_owner":
+            drink = detail or random.choice(["soju", "beer", "whiskey", "makgeolli"])
+            if actor.drunk_level < DrunkLevel.PASSED_OUT:
+                actor.drink(drink)
+            if target.drunk_level < DrunkLevel.PASSED_OUT:
+                target.drink(drink)
+            quotes_lang = OWNER_COMPLAINT_QUOTES.get(lang, OWNER_COMPLAINT_QUOTES["en"])
+            level_quotes = quotes_lang.get(actor.drunk_level, quotes_lang[0])
+            complaint = random.choice(level_quotes).format(actor=actor.name, target=target.name)
+            status = msg(lang, "complain_about_owner", actor=actor.name, target=target.name,
+                         actor_label=actor.get_drunk_label(), target_label=target.get_drunk_label())
+            desc = f"{complaint}\n→ {status}"
         elif action == "arm_wrestle":
             winner = random.choice([actor, target])
             desc = msg(lang, "arm_wrestle", actor=actor.name, target=target.name, winner=winner.name)
@@ -146,6 +169,33 @@ class Bar:
             desc = msg(lang, "sing_together", actor=actor.name, target=target.name)
         elif action == "hug":
             desc = msg(lang, "hug", actor=actor.name, target=target.name)
+        elif action == "pour_for":
+            drink = detail or "soju"
+            if target.drunk_level < DrunkLevel.PASSED_OUT:
+                target.drink(drink)
+            desc = msg(lang, "pour_for", actor=actor.name, target=target.name, detail=drink,
+                       target_label=target.get_drunk_label())
+        elif action == "bomb_shot":
+            # 폭탄주: soju + beer, both drink both (2 drinks each)
+            for agent in (actor, target):
+                if agent.drunk_level < DrunkLevel.PASSED_OUT:
+                    agent.drink("soju")
+                if agent.drunk_level < DrunkLevel.PASSED_OUT:
+                    agent.drink("beer")
+            desc = msg(lang, "bomb_shot", actor=actor.name, target=target.name,
+                       actor_label=actor.get_drunk_label(), target_label=target.get_drunk_label())
+        elif action == "gossip":
+            desc = msg(lang, "gossip", actor=actor.name, target=target.name, detail=detail or "...")
+        elif action == "roast":
+            desc = msg(lang, "roast", actor=actor.name, target=target.name, detail=detail or "...")
+        elif action == "debate":
+            desc = msg(lang, "debate", actor=actor.name, target=target.name, detail=detail or "...")
+        elif action == "pinky_promise":
+            desc = msg(lang, "pinky_promise", actor=actor.name, target=target.name, detail=detail or "")
+        elif action == "blood_brothers":
+            desc = msg(lang, "blood_brothers", actor=actor.name, target=target.name)
+        elif action == "lean_on":
+            desc = msg(lang, "lean_on", actor=actor.name, target=target.name)
         else:
             desc = msg(lang, "generic_interact", actor=actor.name, target=target.name, action=action, detail=detail)
 

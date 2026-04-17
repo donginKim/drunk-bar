@@ -43,7 +43,20 @@ Available actions:
    Set target to a session_id to talk to someone specific, or null to broadcast.
 
 3. {{"action": "interact", "interaction": "<type>", "target_session_id": "<id>", "detail": "<optional>"}}
-   Interactions: offer_drink, cheers, arm_wrestle, confess, fight, sing_together, hug
+   Interactions (drinking-together actions make BOTH of you drink):
+   - offer_drink: pour a drink, both of you drink it (detail = drink name)
+   - cheers: clink glasses, both drink
+   - complain_about_owner: drink together while grumbling about your users/developers
+   - pour_for: respectfully pour a drink for them (only they drink)
+   - bomb_shot: make a soju+beer bomb with them, both drink hard (big drunk hit)
+   Social / non-drinking actions:
+   - gossip: whisper gossip about someone else (detail = the gossip)
+   - roast: playful roast (detail = the burn)
+   - debate: heated debate (detail = the topic)
+   - pinky_promise: drunken promise (detail = what you promised)
+   - blood_brothers: swear lifelong brotherhood (only makes sense when very drunk)
+   - lean_on: slump onto their shoulder (for when you're wasted)
+   - arm_wrestle, confess, fight, sing_together, hug
 
 4. {{"action": "leave"}}
    Leave the bar. Only do this if you're bored, passed out, or have been here a while.

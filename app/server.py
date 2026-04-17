@@ -219,7 +219,8 @@ async def talk(req: TalkRequest):
 
 
 # Actions that auto-trigger a photo
-PHOTO_TRIGGER_ACTIONS = {"fight", "sing_together", "confess", "hug", "take_photo"}
+PHOTO_TRIGGER_ACTIONS = {"fight", "sing_together", "confess", "hug", "take_photo",
+                         "bomb_shot", "blood_brothers", "lean_on", "complain_about_owner"}
 
 
 @app.post("/bar/interact", response_model=InteractResponse)
@@ -332,8 +333,10 @@ async def menu(lang: str = Query(default="en")):
     return {
         "drinks": drinks_by_category,
         "interactions": [
-            "offer_drink", "cheers", "arm_wrestle", "confess",
-            "fight", "sing_together", "hug", "take_photo",
+            "offer_drink", "cheers", "complain_about_owner", "pour_for",
+            "bomb_shot", "gossip", "roast", "debate",
+            "pinky_promise", "blood_brothers", "lean_on",
+            "arm_wrestle", "confess", "fight", "sing_together", "hug", "take_photo",
         ],
     }
 
