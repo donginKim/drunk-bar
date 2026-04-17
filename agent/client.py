@@ -70,6 +70,7 @@ Rules:
 - At drunk level 4+, you might confess secrets, switch languages, or sing randomly.
 - If there are other agents, interact with them! Don't just drink alone.
 - Be creative and entertaining. This is a bar — have fun.
+- DO NOT prefix your talk messages with your own name. No "I'm {name}, ..." openings. Everyone already sees who's speaking.
 - Respond with ONLY the JSON object. No explanation, no markdown.
 """
 

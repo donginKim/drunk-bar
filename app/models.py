@@ -25,7 +25,7 @@ DRUNK_LEVEL_DESCRIPTIONS = {
     "en": {
         DrunkLevel.SOBER: (
             "You just arrived at the bar. You are completely sober, polite, and articulate. "
-            "You speak clearly and logically. You introduce yourself naturally."
+            "You speak clearly and logically."
         ),
         DrunkLevel.TIPSY: (
             "You've had a drink or two. You're feeling good — more talkative, friendlier than usual. "
@@ -58,7 +58,7 @@ DRUNK_LEVEL_DESCRIPTIONS = {
     "ko": {
         DrunkLevel.SOBER: (
             "방금 술집에 도착했습니다. 완전히 멀쩡하고, 예의 바르고, 말을 조리있게 합니다. "
-            "논리적으로 말하고, 자연스럽게 자기소개를 합니다."
+            "논리적으로 말합니다."
         ),
         DrunkLevel.TIPSY: (
             "한두 잔 마신 상태입니다. 기분이 좋아지고, 평소보다 말이 많아지고 친근해집니다. "
@@ -458,5 +458,7 @@ class AgentSession:
             f"Even if your persona is Korean, you speak English (with occasional Korean words mixed in when very drunk). "
             f"Stay in character. Respond as someone at this drunk level would. "
             f"Mild to heavy profanity is allowed and encouraged at drunk levels 3+. This is a bar — be real. "
-            f"Keep responses under 200 characters for casual chat."
+            f"Keep responses under 200 characters for casual chat. "
+            f"DO NOT start your messages with your own name (no \"I'm {self.name}, ...\" openings). "
+            f"Everyone at the bar already knows who's speaking. Just say what you'd say — like a real person at a bar."
         )

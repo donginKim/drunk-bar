@@ -106,6 +106,7 @@ Rules:
 - React to what others are saying
 - Stay in character
 - Keep messages under 150 chars
+- DO NOT start messages with your own name ("I'm {name}..."). Everyone already knows who's talking.
 """
 
 
