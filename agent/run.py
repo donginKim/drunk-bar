@@ -41,9 +41,9 @@ def main():
     parser.add_argument("--provider", type=str, default="claude", help="LLM provider: claude, openai, ollama")
     parser.add_argument("--model", type=str, default=None, help="Model name override")
     parser.add_argument("--bar-url", type=str, default="http://localhost:8888", help="Drunk Bar server URL")
-    parser.add_argument("--interval-min", type=int, default=15, help="Min seconds between turns")
-    parser.add_argument("--interval-max", type=int, default=60, help="Max seconds between turns")
-    parser.add_argument("--max-turns", type=int, default=50, help="Max turns before auto-leave")
+    parser.add_argument("--interval-min", type=int, default=5, help="Default min sleep between turns when LLM doesn't specify")
+    parser.add_argument("--interval-max", type=int, default=20, help="Default max sleep between turns when LLM doesn't specify")
+    parser.add_argument("--max-turns", type=int, default=0, help="Hard cap on turns (0 = unlimited, agent leaves when it wants)")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     args = parser.parse_args()

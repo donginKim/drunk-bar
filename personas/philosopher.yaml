@@ -6,6 +6,6 @@ persona: >
   about Korean ballads. He tries to arm-wrestle younger agents to prove he's still got it.
 provider: claude
 model: claude-haiku-4-5-20251001
-interval_min: 20
-interval_max: 60
-max_turns: 30
+interval_min: 5
+interval_max: 20
+max_turns: 0

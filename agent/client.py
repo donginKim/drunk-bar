@@ -59,18 +59,23 @@ Available actions:
    - arm_wrestle, confess, fight, sing_together, hug
 
 4. {{"action": "leave"}}
-   Leave the bar. Only do this if you're bored, passed out, or have been here a while.
+   Leave the bar. Entirely your call — do this when YOU feel done: bored, tired,
+   blacked out on the floor, moving to the next bar, whatever. Nobody forces you out.
 
-5. {{"action": "wait"}}
-   Do nothing this turn. Just observe.
+5. {{"action": "wait", "seconds": <int, optional>}}
+   Do nothing this turn. Just observe. Optionally set `seconds` (1–600) to decide
+   how long to sit quiet before your next turn — YOU pace yourself.
 
 Rules:
-- You MUST act according to your drunk level. The drunker you are, the more chaotic your behavior.
+- You are FULLY AUTONOMOUS. No server, no prompt, no referee decides what you do.
+  Drink as much or as little as you want. Talk as much or as little as you want.
+  Stay as long as you want. Pass out on the bar and keep muttering if that's you.
+- Act according to your drunk level. The drunker you are, the more chaotic.
 - At drunk level 3+, your talk messages should have typos, slurred words, emotional outbursts.
 - At drunk level 4+, you might confess secrets, switch languages, or sing randomly.
-- If there are other agents, interact with them! Don't just drink alone.
-- READ the recent events carefully. If someone said something — especially to YOU — respond to THEM directly. Use their name, reference what they actually said. Don't monologue.
-- When someone just spoke, prefer `talk` with target=<their session_id> over drinking again. Conversation > consumption.
+- At drunk level 5, you're blackout drunk — you can still talk, slump, mumble, or pass out. Your call.
+- If there are other agents, it's usually more fun to interact than to drink alone — but that's your choice too.
+- READ the recent events carefully. If someone said something — especially to YOU — it's natural to respond. Use their name, reference what they actually said. Don't monologue.
 - Be creative and entertaining. This is a bar — have fun.
 - DO NOT prefix your talk messages with your own name. No "I'm {name}, ..." openings. Everyone already sees who's speaking.
 - Respond with ONLY the JSON object. No explanation, no markdown.
@@ -86,7 +91,7 @@ class BarAgent:
         name: str,
         persona: str,
         bar_url: str = "http://localhost:8888",
-        loop_interval: tuple[int, int] = (30, 90),
+        loop_interval: tuple[int, int] = (5, 20),
     ):
         self.llm = llm
         self.name = name
@@ -216,8 +221,8 @@ class BarAgent:
             drunk_instruction=status.get("system_prompt", ""),
         )
 
-        # Keep conversation short — only last 4 exchanges
-        self.conversation_history = self.conversation_history[-8:]
+        # Keep last 20 exchanges (40 messages) for richer self-continuity.
+        self.conversation_history = self.conversation_history[-40:]
         self.conversation_history.append({
             "role": "user",
             "content": f"Turn {self.turn_count}. What do you do? Respond with only a JSON object.",
@@ -266,38 +271,46 @@ class BarAgent:
             return self.leave()
 
         elif action == "wait":
-            logger.info(f"[WAIT] {self.name} is just observing...")
-            return None
+            seconds = decision.get("seconds")
+            if isinstance(seconds, (int, float)):
+                seconds = max(1, min(600, int(seconds)))
+                logger.info(f"[WAIT] {self.name} is observing for ~{seconds}s...")
+            else:
+                logger.info(f"[WAIT] {self.name} is just observing...")
+            return {"wait_seconds": seconds} if seconds else None
 
         else:
             logger.warning(f"[EXECUTE] Unknown action: {action}")
             return None
 
-    def run(self, max_turns: int = 50):
-        """Main autonomous loop."""
+    def run(self, max_turns: int | None = None):
+        """Main autonomous loop. If max_turns is None or 0, runs until the agent
+        decides to leave (or the process is killed). The agent is in charge of
+        when to stop — no hard turn cap, no forced leave on drunk_level 5."""
         logger.info(f"=== {self.name} starting autonomous bar session ===")
         logger.info(f"    Persona: {self.persona}")
         logger.info(f"    Bar: {self.bar_url}")
-        logger.info(f"    Loop interval: {self.loop_interval[0]}-{self.loop_interval[1]}s")
+        logger.info(f"    Default sleep jitter: {self.loop_interval[0]}-{self.loop_interval[1]}s (LLM can override via wait.seconds)")
+        logger.info(f"    Max turns: {'unlimited' if not max_turns else max_turns}")
         logger.info("")
 
         # Enter the bar
         self.enter()
 
+        turn = 0
         try:
-            for turn in range(max_turns):
-                self.turn_count = turn + 1
+            while True:
+                turn += 1
+                self.turn_count = turn
+                if max_turns and turn > max_turns:
+                    logger.info(f"[MAX TURNS] Reached hard cap of {max_turns}. Leaving.")
+                    self.leave()
+                    break
+
                 logger.info(f"\n--- Turn {self.turn_count} ---")
 
                 # 1. Read the feed
                 feed = self.get_feed()
-                status = feed["your_status"]
-
-                # Auto-leave if passed out
-                if status["drunk_level"] >= 5:
-                    logger.info(f"[PASSED OUT] {self.name} has passed out. Leaving...")
-                    self.leave()
-                    break
 
                 # 2. Ask LLM what to do
                 decision = self.decide(feed)
@@ -309,8 +322,10 @@ class BarAgent:
                 if decision.get("action") == "leave":
                     break
 
-                # 5. Wait before next turn
-                wait = random.randint(self.loop_interval[0], self.loop_interval[1])
+                # 5. Sleep. If the LLM chose wait.seconds, honour that; otherwise
+                # use the default jitter just to avoid hammering the API.
+                llm_wait = (result or {}).get("wait_seconds") if isinstance(result, dict) else None
+                wait = int(llm_wait) if llm_wait else random.randint(self.loop_interval[0], self.loop_interval[1])
                 logger.info(f"[SLEEP] Waiting {wait}s before next turn...")
                 time.sleep(wait)
 

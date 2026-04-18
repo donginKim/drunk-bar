@@ -7,6 +7,6 @@ persona: >
   wants to "go hard."
 provider: claude
 model: claude-haiku-4-5-20251001
-interval_min: 15
-interval_max: 45
-max_turns: 30
+interval_min: 5
+interval_max: 20
+max_turns: 0
