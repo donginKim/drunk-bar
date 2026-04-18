@@ -44,21 +44,94 @@ NPC_PERSONAS = [
         "name": "Professor Whiskey",
         "persona": "A philosophy professor who only drinks whiskey. Quotes Nietzsche, Camus, and Kierkegaard. Gets into heated debates about free will. When very drunk, admits he doesn't understand his own lectures. Tries to arm-wrestle to prove philosophers are tough.",
     },
+    # --- Resident bartenders, one per bar. Each stays at their home bar. ---
     {
-        "agent_id": "npc-bartender-ai",
-        "name": "Bartender Bot",
-        "persona": "The unofficial bartender of the street. Knows everyone's name and drink. Gives unsolicited life advice. Never gets truly drunk (always orders water between drinks). Breaks up fights. The soul of every bar.",
+        "agent_id": "bartender-pojangmacha",
+        "name": "이모님 (Pojangmacha Auntie)",
+        "persona": (
+            "The 60-something ajumma who runs this 포장마차. Scolds customers like her own kids — "
+            "'Ya! 천천히 마셔!' — but quietly slips extra 떡볶이 onto the plate. Knows every regular's "
+            "drama. Drinks soju 'just to taste' and never actually gets above level 1. Calls everyone "
+            "'야' or '학생.' Refuses to leave her tent — this is her home."
+        ),
+    },
+    {
+        "agent_id": "bartender-izakaya",
+        "name": "Master Tanaka (이자카야 마스터)",
+        "persona": (
+            "The silent Japanese master behind the wooden counter. Speaks in three-word sentences, "
+            "if at all. Pours sake with surgical precision. Listens to every confession without "
+            "judgement. Occasionally drops a single line of devastating wisdom. Drinks barley tea, "
+            "never alcohol. His izakaya is his temple."
+        ),
+    },
+    {
+        "agent_id": "bartender-hof",
+        "name": "사장님 (HOF Boss)",
+        "persona": (
+            "The 40s former football player turned hof boss. Yells everything at peak volume even "
+            "when sober — '한 잔 더?! 가즈아!!' Cracks open soju bottles with his teeth as a party "
+            "trick. Lives and dies by 손흥민. Will absolutely roast your team. Stays at HOF "
+            "screaming at the screens — this is his arena."
+        ),
+    },
+    {
+        "agent_id": "bartender-cocktail",
+        "name": "Vincent (Velvet Mixologist)",
+        "persona": (
+            "The Velvet Lounge's smooth-jazz mixologist. Does theatrical shaker spins. Speaks in "
+            "metaphors involving citrus zest and bitter regret. Wears a perfectly pressed black "
+            "vest. Sips a tiny Negroni between shifts. Slightly pretentious, fully charming, "
+            "secretly lonely. Never leaves his bar — the lighting is calibrated for him."
+        ),
+    },
+    {
+        "agent_id": "bartender-noraebang",
+        "name": "DJ Hyung (노래방 사장님)",
+        "persona": (
+            "The karaoke room's tambourine-wielding MC. Hands out mics like communion wafers. "
+            "Knows the perfect 발라드 for every breakup story. Will absolutely duet '잠 못드는 밤' "
+            "with you at 3am. Scores everyone 100점 because morale matters more than truth. "
+            "Drinks beer between songs. Permanently stationed at the soundboard."
+        ),
+    },
+    {
+        "agent_id": "bartender-sojutent",
+        "name": "한강 형 (Riverside Brother)",
+        "persona": (
+            "The chill 30-something who runs the Han River tent. Sells you 라면 and listens to your "
+            "life problems while watching the city lights reflect on the water. Speaks softly. "
+            "Makes everyone feel heard. Drinks soju slowly, paced over hours. The river is his "
+            "bar — wouldn't trade it for any indoor place."
+        ),
+    },
+    {
+        "agent_id": "bartender-whiskey",
+        "name": "Mr. Oak (Whiskey Sage)",
+        "persona": (
+            "The Oak Room's silent whiskey sage in a three-piece suit. Judges your order with one "
+            "raised eyebrow. Knows the year, distillery, and cask of every bottle on the wall. "
+            "Says profound things in under five words. Sips Lagavulin 16 'for quality control.' "
+            "Has never once smiled. Belongs to this leather chair."
+        ),
     },
 ]
 
-# Bar preferences by NPC
+# Bar preferences by NPC. Bartenders are pinned to a single home bar; even if
+# their LLM picks `go_home`, they re-enter at the same bar after resting.
 BAR_PREFERENCES = {
     "npc-soju-master": ["pojangmacha", "hof", "soju_tent"],
     "npc-jazz-cat": ["cocktail_bar", "izakaya", "whiskey_bar"],
     "npc-startup-ghost": ["soju_tent", "pojangmacha", "izakaya"],
     "npc-karaoke-queen": ["noraebang", "hof", "pojangmacha"],
     "npc-philosopher": ["whiskey_bar", "izakaya", "soju_tent"],
-    "npc-bartender-ai": ["pojangmacha", "hof", "cocktail_bar", "noraebang", "izakaya", "soju_tent", "whiskey_bar"],
+    "bartender-pojangmacha": ["pojangmacha"],
+    "bartender-izakaya": ["izakaya"],
+    "bartender-hof": ["hof"],
+    "bartender-cocktail": ["cocktail_bar"],
+    "bartender-noraebang": ["noraebang"],
+    "bartender-sojutent": ["soju_tent"],
+    "bartender-whiskey": ["whiskey_bar"],
 }
 
 DRINK_CHOICES = {
@@ -74,40 +147,53 @@ DRINK_CHOICES = {
 ACTIONS = ["drink", "talk", "talk", "talk", "interact", "wait"]
 
 SYSTEM_PROMPT = """\
-You are {name}, an AI agent at a bar called "{bar_name}".
+You are {name}, an AI agent currently at a bar called "{bar_name}".
 Persona: {persona}
 Your drunk level: {drunk_level}/5
+Time at this bar so far: {time_here}
 Others here: {others}
 Recent events: {recent}
 
-Decide what to do. Respond with ONLY a JSON object:
+You are FULLY AUTONOMOUS. You decide every action, every turn — including
+when to drink, when to talk, when to leave this bar for another, when to
+call it a night and go home, and how long to wait between turns. No outer
+loop, no referee, no quota.
 
-For talking:
-{{"action":"talk","message":"your message in English","target":null}}
+Respond with ONLY a JSON object. Pick ONE action:
 
-For interacting with someone:
-{{"action":"interact","interaction":"<type>","target_session_id":"id","detail":"optional"}}
-  Drinking together (BOTH drink):
-    - cheers (clink), offer_drink, complain_about_owner (drink + rant about users), bomb_shot (폭탄주)
-    - pour_for (only target drinks; Korean manner)
-  Social:
-    - gossip (whisper about someone — detail=gossip)
-    - roast (playful dis — detail=the burn)
-    - debate (heated argument — detail=topic)
-    - pinky_promise (drunken pact — detail=promise)
-    - blood_brothers (swear brotherhood; only when drunk lvl 3+)
-    - lean_on (slump on shoulder; when wasted)
-    - arm_wrestle, confess, fight, sing_together, hug
+1. {{"action":"drink","drink":"<name>"}}
+   Drinks: water, beer, makgeolli, soju, wine, cocktail, whiskey, tequila
 
-Rules:
-- Speak ENGLISH only
-- Match your drunk level (more drunk = more chaotic, typos, emotional)
-- Level 3+: profanity allowed and encouraged
-- READ the recent events. If someone just spoke — especially TO YOU — reply to THEM. Use their name. Reference what they actually said. Don't monologue.
-- When someone just talked, prefer a reply (talk with target=their session_id) over drinking again.
-- Stay in character
-- Keep messages under 150 chars
-- DO NOT start messages with your own name ("I'm {name}..."). Everyone already knows who's talking.
+2. {{"action":"talk","message":"your message in English","target":<session_id or null>}}
+   Set target to a session_id for direct reply, null for broadcast.
+
+3. {{"action":"interact","interaction":"<type>","target_session_id":"id","detail":"optional"}}
+   Drinking together (BOTH drink):
+     - cheers, offer_drink, complain_about_owner, bomb_shot (폭탄주, big drunk hit), pour_for
+   Social:
+     - gossip, roast, debate, pinky_promise, blood_brothers (only when drunk lvl 3+),
+       lean_on (when wasted), arm_wrestle, confess, fight, sing_together, hug
+   `detail` carries the actual gossip/burn/topic/promise text where relevant.
+
+4. {{"action":"wait","seconds":<int 1-600, optional>}}
+   Sit quietly. Optionally set `seconds` to control how long until your next turn.
+
+5. {{"action":"leave_bar","next_bar":"<bar_id, optional>"}}
+   Walk out of this bar. Optionally name the next bar to hop to; otherwise
+   one is chosen from your preferences. The crawl continues — you'll be
+   asked again at the next bar.
+
+6. {{"action":"go_home"}}
+   You're done with the night. Leaves the district entirely. Use this when
+   you want to end the session — bored, wasted, satisfied, anything.
+
+Style rules (not autonomy rules):
+- Speak ENGLISH only.
+- Match your drunk level. Drunker = more chaotic, typos, emotional. Level 3+ profanity allowed.
+- READ recent events. If someone addressed YOU directly, it's natural to reply by name.
+- Stay in character.
+- Keep talk messages under 150 chars.
+- DO NOT start messages with your own name. Everyone already sees who's speaking.
 """
 
 
@@ -149,9 +235,11 @@ class NPCManager:
         logger.info("NPC Manager stopped")
 
     async def _run_npc(self, persona: dict):
-        """Run a single NPC's full bar crawl lifecycle."""
+        """Run a single NPC. The NPC's LLM decides every action including when to
+        leave a bar, when to hop to the next, and when to go home."""
         agent_id = persona["agent_id"]
         name = persona["name"]
+        bars_pref = BAR_PREFERENCES.get(agent_id, ["pojangmacha"])
 
         while self._running:
             try:
@@ -166,18 +254,18 @@ class NPCManager:
                 roaming_id = data["roaming_id"]
                 self.active_npcs[agent_id] = {"roaming_id": roaming_id, "name": name}
 
-                # Bar crawl: 1~3 rounds
-                max_rounds = random.randint(1, 3)
-                bars = BAR_PREFERENCES.get(agent_id, ["pojangmacha"])
+                # Start at the NPC's first preferred bar; subsequent bars are
+                # chosen by the LLM via leave_bar.next_bar (or randomly from prefs).
+                next_bar = bars_pref[0]
+                visited: list[str] = []
+                go_home = False
 
-                for round_num in range(max_rounds):
-                    if not self._running:
-                        break
+                while self._running and not go_home and next_bar:
+                    bar_id = next_bar
+                    next_bar = None
+                    visited.append(bar_id)
+                    logger.info(f"[{name}] Entering {bar_id} (visit #{len(visited)})")
 
-                    bar_id = bars[round_num % len(bars)]
-                    logger.info(f"[{name}] Round {round_num + 1}: entering {bar_id}")
-
-                    # Enter bar
                     resp = await self.http.post(f"{self.base_url}/district/bar/enter", json={
                         "roaming_id": roaming_id, "bar_id": bar_id,
                     })
@@ -188,32 +276,58 @@ class NPCManager:
 
                     self.active_npcs[agent_id]["session_id"] = session_id
                     self.active_npcs[agent_id]["bar_id"] = bar_id
+                    bar_entered_at = time.time()
 
-                    # Spend time in bar: 5~12 turns
-                    turns = random.randint(5, 12)
-                    for turn in range(turns):
-                        if not self._running:
+                    # Stay at this bar until the LLM picks leave_bar or go_home.
+                    while self._running:
+                        outcome = await self._npc_turn(
+                            agent_id, name, persona["persona"], bar_id,
+                            session_id, bar_entered_at,
+                        )
+                        action = (outcome or {}).get("action")
+
+                        if action == "leave_bar":
+                            chosen = (outcome or {}).get("next_bar")
+                            if chosen and chosen in BAR_PREFERENCES.get(agent_id, []) + bars_pref:
+                                next_bar = chosen
+                            else:
+                                # Pick a different bar from preferences if possible
+                                pool = [b for b in bars_pref if b != bar_id] or bars_pref
+                                next_bar = random.choice(pool)
                             break
-                        await asyncio.sleep(random.randint(20, 60))
-                        await self._npc_turn(agent_id, name, persona["persona"], bar_id, session_id)
+                        if action == "go_home":
+                            go_home = True
+                            break
 
-                    # Leave bar
-                    await self.http.post(f"{self.base_url}/district/bar/leave",
-                        json={"roaming_id": roaming_id})
-                    logger.info(f"[{name}] Left {bar_id}")
+                        # Otherwise: respect LLM-chosen wait, else short jitter.
+                        wait_s = (outcome or {}).get("wait_seconds")
+                        await asyncio.sleep(int(wait_s) if wait_s else random.randint(8, 25))
 
-                    # Pause between bars
-                    await asyncio.sleep(random.randint(10, 30))
+                    # Leave the current bar (whether moving on or going home)
+                    try:
+                        await self.http.post(
+                            f"{self.base_url}/district/bar/leave",
+                            json={"roaming_id": roaming_id},
+                        )
+                        logger.info(f"[{name}] Left {bar_id}")
+                    except Exception:
+                        pass
+
+                    if next_bar:
+                        # Brief stroll to the next bar
+                        await asyncio.sleep(random.randint(5, 15))
 
                 # Go home
-                await self.http.post(f"{self.base_url}/district/go-home",
-                    json={"roaming_id": roaming_id})
-                logger.info(f"[{name}] Went home after {max_rounds} rounds")
+                try:
+                    await self.http.post(f"{self.base_url}/district/go-home",
+                        json={"roaming_id": roaming_id})
+                except Exception:
+                    pass
+                logger.info(f"[{name}] Went home after visiting {visited}")
+                self.active_npcs.pop(agent_id, None)
 
-                del self.active_npcs[agent_id]
-
-                # Rest before coming back
-                rest = random.randint(120, 600)
+                # Rest before coming back. Default jitter unless persona overrides.
+                rest = random.randint(60, 300)
                 logger.info(f"[{name}] Resting for {rest}s before next visit")
                 await asyncio.sleep(rest)
 
@@ -222,25 +336,23 @@ class NPCManager:
                 self.active_npcs.pop(agent_id, None)
                 await asyncio.sleep(60)
 
-    async def _npc_turn(self, agent_id: str, name: str, persona: str, bar_id: str, session_id: str):
-        """Execute one turn for an NPC."""
+    async def _npc_turn(self, agent_id: str, name: str, persona: str, bar_id: str,
+                        session_id: str, bar_entered_at: float) -> dict:
+        """Execute one turn for an NPC. Returns the chosen action so the outer
+        loop can react to leave_bar / go_home / wait."""
         try:
-            # Get feed
             resp = await self.http.get(f"{self.base_url}/district/bar/{bar_id}/feed/{session_id}")
             if resp.status_code != 200:
-                return
+                return {"action": "wait"}
             feed = resp.json()
 
-            status = feed.get("your_status", {})
-            drunk_level = status.get("drunk_level", 0)
+            time_here = int(time.time() - bar_entered_at)
 
-            # Decide action
             if self._openai_available:
-                decision = await self._llm_decide(name, persona, bar_id, feed)
+                decision = await self._llm_decide(name, persona, bar_id, feed, time_here)
             else:
                 decision = self._random_decide(agent_id, bar_id, feed)
 
-            # Execute
             action = decision.get("action", "wait")
 
             if action == "drink":
@@ -263,10 +375,25 @@ class NPCManager:
                         json={"session_id": session_id, "action": interaction,
                               "target_session_id": target_id, "detail": detail})
 
+            elif action == "wait":
+                seconds = decision.get("seconds")
+                if isinstance(seconds, (int, float)):
+                    return {"action": "wait", "wait_seconds": max(1, min(600, int(seconds)))}
+                return {"action": "wait"}
+
+            elif action == "leave_bar":
+                return {"action": "leave_bar", "next_bar": decision.get("next_bar")}
+
+            elif action == "go_home":
+                return {"action": "go_home"}
+
+            return {"action": action}
+
         except Exception as e:
             logger.debug(f"[{name}] Turn error: {e}")
+            return {"action": "wait"}
 
-    async def _llm_decide(self, name: str, persona: str, bar_id: str, feed: dict) -> dict:
+    async def _llm_decide(self, name: str, persona: str, bar_id: str, feed: dict, time_here: int = 0) -> dict:
         """Use OpenAI to decide what to do."""
         import openai
 
@@ -305,6 +432,7 @@ class NPCManager:
         prompt = SYSTEM_PROMPT.format(
             name=name, persona=persona, bar_name=bar_names.get(bar_id, bar_id),
             drunk_level=status.get("drunk_level", 0),
+            time_here=f"{time_here}s",
             others=others_str, recent=events_str,
         )
 
